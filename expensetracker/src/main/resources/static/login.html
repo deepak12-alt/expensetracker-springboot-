@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Expense Tracker - Login</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background: white;
+            padding: 35px;
+            width: 380px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            text-align: center;
+            animation: fadeIn 0.6s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo img {
+            width: 70px;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            margin: 5px 0 15px 0;
+            color: #333;
+        }
+
+        p.subtitle {
+            font-size: 13px;
+            color: gray;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102,126,234,0.4);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        .toggle-text {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #667eea;
+            cursor: pointer;
+        }
+
+        #message {
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+
+    <div class="logo">
+        <img src="https://cdn-icons-png.flaticon.com/512/2331/2331941.png" alt="Expense Tracker Logo">
+    </div>
+
+    <h2 id="formTitle">Sign In</h2>
+    <p class="subtitle">Manage your expenses smartly</p>
+
+    <input type="text" id="username" placeholder="Enter Username">
+    <input type="password" id="password" placeholder="Enter Password">
+
+    <button onclick="submitForm()">Submit</button>
+
+    <p id="message"></p>
+
+    <p class="toggle-text" onclick="toggleMode()" id="toggleText">
+        First time user? Sign Up
+    </p>
+
+</div>
+
+<script>
+
+    let isSignIn = true;
+
+    function toggleMode() {
+        isSignIn = !isSignIn;
+
+        document.getElementById("formTitle").innerText =
+            isSignIn ? "Sign In" : "Sign Up";
+
+        document.getElementById("toggleText").innerText =
+            isSignIn ?
+            "First time user? Sign Up" :
+            "Already have account? Sign In";
+
+        document.getElementById("message").innerText = "";
+    }
+
+    function submitForm() {
+
+        const url = isSignIn ? "/auth/login" : "/auth/register";
+
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                username: document.getElementById("username").value,
+                password: document.getElementById("password").value
+            })
+        })
+        .then(res => res.text())
+        .then(data => {
+
+            const messageElement = document.getElementById("message");
+            messageElement.innerText = data;
+
+            if (data === "Login successful!") {
+                messageElement.style.color = "green";
+                localStorage.setItem("loggedUser",
+                    document.getElementById("username").value);
+
+                setTimeout(() => {
+                    window.location.href = "/index.html";
+                }, 800);
+            } else {
+                messageElement.style.color = "red";
+            }
+        });
+    }
+
+</script>
+
+</body>
+</html>

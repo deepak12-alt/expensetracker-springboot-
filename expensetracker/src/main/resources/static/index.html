@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Expense Tracker Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: auto;
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .header img {
+            width: 70px;
+        }
+
+        .header h2 {
+            margin: 5px 0;
+            color: #333;
+        }
+
+        .user-info {
+            text-align: right;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .add-btn {
+            width: 100%;
+            background: #6a11cb;
+            color: white;
+        }
+
+        .logout-btn {
+            background: red;
+            color: white;
+            float: right;
+        }
+
+        .expense-item {
+            display: flex;
+            justify-content: space-between;
+            background: #f5f5f5;
+            padding: 8px;
+            margin-top: 6px;
+            border-radius: 8px;
+        }
+
+        .delete-btn {
+            background: crimson;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 5px;
+        }
+
+        .total {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="user-info">
+        Logged in as: <b id="loggedUser"></b>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="header">
+        <img src="https://cdn-icons-png.flaticon.com/512/2331/2331941.png" alt="Logo">
+        <h2>Expense Tracker</h2>
+    </div>
+
+    <input type="text" id="desc" placeholder="Description">
+    <input type="number" id="amount" placeholder="Amount">
+    <input type="date" id="date">
+
+    <select id="category">
+        <option>Food</option>
+        <option>Travel</option>
+        <option>Shopping</option>
+        <option>Bills</option>
+        <option>Other</option>
+    </select>
+
+    <button class="add-btn" onclick="addExpense()">Add Expense</button>
+
+    <div class="total">
+        Total: Rs <span id="totalAmount">0</span>
+    </div>
+
+    <div id="expenseList"></div>
+
+    <canvas id="chart" style="margin-top:20px;"></canvas>
+
+</div>
+
+<script>
+
+    let chartInstance;
+    const user = localStorage.getItem("loggedUser");
+
+    if (!user) {
+        window.location.href = "/login.html";
+    }
+
+    document.getElementById("loggedUser").innerText = user;
+
+    function logout() {
+        localStorage.removeItem("loggedUser");
+        window.location.href = "/login.html";
+    }
+
+    function addExpense() {
+
+        fetch("/expenses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                description: desc.value,
+                amount: parseFloat(amount.value),
+                category: category.value,
+                date: date.value,
+                username: user
+            })
+        }).then(() => {
+            loadExpenses();
+            desc.value = "";
+            amount.value = "";
+            date.value = "";
+        });
+    }
+
+    function loadExpenses() {
+
+        fetch("/expenses/" + user)
+            .then(res => res.json())
+            .then(data => {
+
+                expenseList.innerHTML = "";
+                let total = 0;
+                const categoryTotals = {};
+
+                data.forEach(e => {
+
+                    total += e.amount;
+                    categoryTotals[e.category] =
+                        (categoryTotals[e.category] || 0) + e.amount;
+
+                    const div = document.createElement("div");
+                    div.className = "expense-item";
+
+                    div.innerHTML = `
+                        <span>${e.description} - Rs ${e.amount} (${e.category})</span>
+                        <button class="delete-btn" onclick="deleteExpense(${e.id})">Delete</button>
+                    `;
+
+                    expenseList.appendChild(div);
+                });
+
+                totalAmount.innerText = total;
+                updateChart(categoryTotals);
+            });
+    }
+
+    function deleteExpense(id) {
+        fetch("/expenses/" + id, { method: "DELETE" })
+            .then(() => loadExpenses());
+    }
+
+    function updateChart(data) {
+
+        const ctx = document.getElementById("chart");
+
+        if (chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: "pie",
+            data: {
+                labels: Object.keys(data),
+                datasets: [{
+                    data: Object.values(data)
+                }]
+            }
+        });
+    }
+
+    loadExpenses();
+
+</script>
+
+</body>
+</html>
